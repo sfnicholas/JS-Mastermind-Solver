@@ -1,8 +1,8 @@
 # JS-Mastermind-Solver
 
-Solves the game of "Mastermind".
+Solves the game of "Mastermind". Modified based on https://github.com/NebuPookins/JS-Mastermind-Solver
 
-Online demo at https://nebupookins.github.io/JS-Mastermind-Solver/
+Online demo at https://mastermind-solver.netlify.app/
 
 Functions added:
 - redo the algorithm method to "Knuth Five-Guess Algorithm" a better method
