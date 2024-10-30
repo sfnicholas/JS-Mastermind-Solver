@@ -4,8 +4,7 @@ Solves the game of "Mastermind".
 
 Online demo at https://nebupookins.github.io/JS-Mastermind-Solver/
 
-TODO:
-
-- Extended the functions so it can do with 8 pins
-- Extended so that there could be 10 colors
-- Extended with teh blank option
+Functions added:
+- redo the algorithm method to "Knuth Five-Guess Algorithm" a better method
+- added options such as "have blank", and "2 max duplicates"
+- added maximum combination restrictions to avoid website crash.
