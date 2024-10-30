@@ -1,0 +1,19 @@
+/* styles.css */
+
+#form-container {
+  margin-bottom: 1rem;
+}
+
+#input-alert, #cur-guess-alert, #success {
+  margin-top: 1rem;
+}
+
+#play-area table {
+  margin-top: 1rem;
+}
+
+/* Add this to style the blank color differently if desired */
+.guess:contains("Blank") {
+    color: #888;
+    font-style: italic;
+}
