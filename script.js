@@ -81,10 +81,22 @@ $(function () {
   function getScoreDistribution(guess, possibleSolutions) {
     const distribution = new Map();
 
+    // Early termination if we've found enough different score patterns
+    const maxPatterns = Math.min(possibleSolutions.length, 10);
+    let patternCount = 0;
+
     for (const solution of possibleSolutions) {
       const score = judgeGuess(solution, guess);
       const scoreKey = `${score.bothCorrect},${score.colorCorrect}`;
+
+      if (!distribution.has(scoreKey)) {
+        patternCount++;
+      }
+
       distribution.set(scoreKey, (distribution.get(scoreKey) || 0) + 1);
+
+      // If we've found enough different patterns, we can stop
+      if (patternCount >= maxPatterns) break;
     }
 
     return distribution;
@@ -98,31 +110,50 @@ $(function () {
     let bestGuess = null;
     let minMaxRemaining = Infinity;
 
-    // First, try to find a winning guess from the possible solutions
-    for (const guess of possibleSolutions) {
-      const distribution = getScoreDistribution(guess, possibleSolutions);
+    // Sample size for possible solutions to evaluate
+    const sampleSize = Math.min(possibleSolutions.length, 1000);
+    const sampledSolutions =
+      possibleSolutions.length > sampleSize
+        ? possibleSolutions.slice(0, sampleSize)
+        : possibleSolutions;
+
+    // First try solutions from our sample
+    for (const guess of sampledSolutions) {
+      const distribution = getScoreDistribution(guess, sampledSolutions);
       const maxRemaining = Math.max(...distribution.values());
 
       if (maxRemaining < minMaxRemaining) {
         minMaxRemaining = maxRemaining;
         bestGuess = guess;
 
-        // If we found a guess that splits the possibilities optimally
-        if (maxRemaining === 1) {
+        // Early exit if we found an optimal guess
+        if (maxRemaining <= 2) {
           return guess;
         }
       }
     }
 
-    // If no optimal guess found in possible solutions, try all possible guesses
-    if (possibleSolutions.length > 2) {
-      for (const guess of allPossibleGuesses) {
-        const distribution = getScoreDistribution(guess, possibleSolutions);
+    // Only try additional guesses if we haven't found a good enough solution
+    if (minMaxRemaining > sampledSolutions.length / 4) {
+      // Sample a subset of all possible guesses
+      const maxGuessesToTry = 1000;
+      const guessesToTry =
+        allPossibleGuesses.length > maxGuessesToTry
+          ? allPossibleGuesses.slice(0, maxGuessesToTry)
+          : allPossibleGuesses;
+
+      for (const guess of guessesToTry) {
+        const distribution = getScoreDistribution(guess, sampledSolutions);
         const maxRemaining = Math.max(...distribution.values());
 
         if (maxRemaining < minMaxRemaining) {
           minMaxRemaining = maxRemaining;
           bestGuess = guess;
+
+          // Early exit if we found a good enough guess
+          if (maxRemaining <= sampledSolutions.length / 4) {
+            break;
+          }
         }
       }
     }
