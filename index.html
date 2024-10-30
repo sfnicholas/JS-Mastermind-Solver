@@ -24,10 +24,21 @@
                 <div class="col-md-1">
                     <input type="number" class="form-control" id="numPegs" min="1" step="1" value="4">
                 </div>
-                <div class="col-md-2">
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="allowDups" checked="checked">
-                        <label for="allowDups" class="form-check-label">Allow duplicate colors</label>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label>Duplicate Colors:</label>
+                        <div class="form-check">
+                            <input type="radio" class="form-check-input" id="noDups" name="dupsOption" value="none">
+                            <label class="form-check-label" for="noDups">No duplicates</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="radio" class="form-check-input" id="maxTwoDups" name="dupsOption" value="max2">
+                            <label class="form-check-label" for="maxTwoDups">Max 2 duplicates</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="radio" class="form-check-input" id="unlimitedDups" name="dupsOption" value="unlimited" checked>
+                            <label class="form-check-label" for="unlimitedDups">Multiple duplicates</label>
+                        </div>
                     </div>
                 </div>
                 <div class="col-md-2">

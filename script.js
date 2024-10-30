@@ -8,7 +8,6 @@ $(function () {
   var $playAreaCurGuess = $("#cur-guess");
   var $colorLabels = $("#colorLabels");
   var $numPegs = $("#numPegs");
-  var $allowDups = $("#allowDups");
   var $inputAlert = $("#input-alert");
   var $curGuessAlert = $("#cur-guess-alert");
   var $success = $("#success");
@@ -264,54 +263,134 @@ $(function () {
     }
   }
 
-  // Start button event handler
-  $startBtn.on("click", () => {
-    $playAreaOldGuesses.html("");
-    $playAreaCurGuess.html("");
-    $inputAlert.hide();
-    $curGuessAlert.hide();
-    $success.hide();
+  // Add this new function after the existing generateAllPossibleGuessesWithDups function
+  function generateAllPossibleGuessesWithLimitedDups(
+    numPegs,
+    colors,
+    maxDups = 2
+  ) {
+    if (numPegs < 1) throw "numPegs must be at least 1.";
 
-    let numPegs = parseInt($numPegs.val(), 10);
-    if (numPegs < 1) {
-      $inputAlert.text("Need at least one peg.");
-      $inputAlert.show();
-      return;
+    function isValidDuplicates(guess) {
+      const colorCount = new Map();
+      for (const color of guess) {
+        colorCount.set(color, (colorCount.get(color) || 0) + 1);
+        if (colorCount.get(color) > maxDups) return false;
+      }
+      return true;
     }
 
-    let parsedColors = $colorLabels
-      .val()
-      .split(/[ ,]+/)
-      .map((color) => color.trim())
-      .filter(Boolean);
-    if (parsedColors.length < 1) {
-      $inputAlert.text("Need at least one color.");
-      $inputAlert.show();
-      return;
-    }
+    // Generate all possibilities first
+    let allGuesses = generateAllPossibleGuessesWithDups(numPegs, colors);
+    // Filter out combinations with more than maxDups duplicates
+    return allGuesses.filter(isValidDuplicates);
+  }
 
-    let allowDups = $allowDups.is(":checked");
-    if (!allowDups && parsedColors.length < numPegs) {
-      $inputAlert.text(
-        "If duplicates are not allowed, need at least as many colors as there are pegs."
+  // Add this function at the top with other utility functions
+  function calculateCombinations(numPegs, numColors, dupsOption) {
+    switch (dupsOption) {
+      case "none":
+        // P(n,r) = n!/(n-r)! where n is numColors and r is numPegs
+        return factorial(numColors) / factorial(numColors - numPegs);
+      case "max2":
+        // This is an approximation for max 2 duplicates
+        return Math.min(
+          Math.pow(numColors, numPegs),
+          factorial(numColors + numPegs - 1) /
+            (factorial(numPegs) * factorial(numColors - 1))
+        );
+      case "unlimited":
+        // n^r where n is numColors and r is numPegs
+        return Math.pow(numColors, numPegs);
+      default:
+        return Math.pow(numColors, numPegs);
+    }
+  }
+
+  function factorial(n) {
+    if (n < 0) return 0;
+    if (n === 0) return 1;
+    let result = 1;
+    for (let i = 2; i <= n; i++) result *= i;
+    return result;
+  }
+
+  // Modify the updateStartButtonHandler function
+  function updateStartButtonHandler() {
+    $startBtn.off("click").on("click", () => {
+      $inputAlert.hide();
+      $oldGuessesTable.hide();
+      $playAreaOldGuesses.empty();
+      $playAreaCurGuess.empty();
+      $curGuessAlert.hide();
+      $success.hide();
+
+      // Parse inputs
+      let numPegs = parseInt($numPegs.val());
+      let parsedColors = $colorLabels
+        .val()
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+      let dupsOption = $('input[name="dupsOption"]:checked').val();
+
+      // Calculate total combinations
+      const totalCombinations = calculateCombinations(
+        numPegs,
+        parsedColors.length,
+        dupsOption
       );
-      $inputAlert.show();
-      return;
-    }
+      const COMBINATION_LIMIT = 500000; // Increased from 10000 to 500000
 
-    globalGameState = {
-      numPegs,
-      colors: parsedColors,
-      allowDups,
-      possibleGuesses: allowDups
-        ? generateAllPossibleGuessesWithDups(numPegs, parsedColors)
-        : generateAllPossibleGuessesNoDups(numPegs, parsedColors),
-      allPossibleGuesses: null, // Will be initialized on first guess
-    };
+      // Check if the combination count exceeds the limit
+      if (totalCombinations > COMBINATION_LIMIT) {
+        $inputAlert.html(
+          `This combination would generate ${totalCombinations.toLocaleString()} possibilities, ` +
+            `which exceeds the limit of ${COMBINATION_LIMIT.toLocaleString()}.<br><br>` +
+            `Try reducing the number of pegs, colors, or using a more restrictive duplication option.`
+        );
+        $inputAlert.show();
+        return;
+      }
 
-    $startBtn.text("Restart");
-    updateUiWithAGuess();
-  });
+      // Rest of your existing validation
+      if (dupsOption === "none" && parsedColors.length < numPegs) {
+        $inputAlert.text(
+          "If duplicates are not allowed, need at least as many colors as there are pegs."
+        );
+        $inputAlert.show();
+        return;
+      }
+
+      globalGameState = {
+        numPegs,
+        colors: parsedColors,
+        allowDups: dupsOption !== "none",
+        possibleGuesses: (() => {
+          switch (dupsOption) {
+            case "none":
+              return generateAllPossibleGuessesNoDups(numPegs, parsedColors);
+            case "max2":
+              return generateAllPossibleGuessesWithLimitedDups(
+                numPegs,
+                parsedColors,
+                2
+              );
+            case "unlimited":
+              return generateAllPossibleGuessesWithDups(numPegs, parsedColors);
+            default:
+              return generateAllPossibleGuessesWithDups(numPegs, parsedColors);
+          }
+        })(),
+        allPossibleGuesses: null,
+      };
+
+      updateUiWithAGuess();
+    });
+  }
+
+  // Call the updated handler
+  updateStartButtonHandler();
 
   $playAreaCurGuess.on("click", "button", updateUiWithAGuess);
 });
