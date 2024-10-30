@@ -388,6 +388,7 @@ $(function () {
       updateUiWithAGuess();
     });
   }
+
   // Call the updated handler
   updateStartButtonHandler();
 
